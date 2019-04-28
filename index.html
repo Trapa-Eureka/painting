@@ -6,6 +6,156 @@
         <meta http-equiv="X-UA-Compatible" content="ie=edge">
         <link rel="stylesheet" href="/style.css">
         <title>Paint JS</title>
+
+        <style>
+            body {
+                background-color: #f6f9fc;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, 
+                Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 50px 0px;
+                width: 700px;
+                margin: 0 auto;
+            }
+
+            .title {
+                display: flex;
+                justify-content: flex-start;
+                align-self: flex-start;
+                transform: rotate(-90deg);
+                position: absolute;
+                margin-left: -116px;
+                margin-top: 95px;
+                font-size: 20px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                color: #FAF6F8;
+            }
+            .title:after {
+                content: attr(data-text);
+                position: absolute;
+                left: 0;
+                top: 0;
+                background: linear-gradient(to bottom, #FAF6F8, #ddd);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                z-index: 2;
+            }
+            .title:before {
+                content: attr(data-text);
+                position: absolute;
+                left: 0;
+                top: 0;
+                text-shadow: 0 2px 2px #d4e6f7;
+                z-index: 1;
+            }
+
+            .canvas {
+                width: 700px; /* 700px / 40% */
+                height: 700px; /* 700px / 62vh */
+                background-color: #fff;
+                border-radius: 15px;
+                box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+            }
+
+            .controls {
+                margin-top: 80px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .controls .controls__btns {
+                margin-bottom: 30px;
+            }
+            .controls__btns button {
+                all: unset;
+                cursor: pointer;
+                background-color: #fff;
+                padding: 5px 0px;
+                width: 80px;
+                text-align: center;
+                border-radius: 5px;
+                box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+                border: 1px solid rgba(0, 0, 0, 0.2);
+                color: rgba(0, 0, 0, 0.7);
+                text-transform: uppercase;
+                font-weight: 800;
+                font-size: 12px;
+            }
+            .controls__btns button:active {
+                transform: scale(0.98);
+            }
+
+            .controls .controls__colors {
+                display: flex;
+
+            }
+            .controls__colors .controls__color {
+                width: 50px;
+                height: 50px;
+                border-radius: 25px;
+                cursor: pointer;
+                margin-right: 6px;
+                box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+            }
+            .controls__colors .controls__color:last-child {
+                margin-right: 0px;
+            }
+
+            .controls .controls__range {
+                margin-bottom: 30px;
+            }
+            .controls__range input {
+                width: 166px;
+            }
+
+            html, body, div, span, applet, object, iframe,
+            h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+            a, abbr, acronym, address, big, cite, code,
+            del, dfn, em, img, ins, kbd, q, s, samp,
+            small, strike, strong, sub, sup, tt, var,
+            b, u, i, center,
+            dl, dt, dd, ol, ul, li,
+            fieldset, form, label, legend,
+            table, caption, tbody, tfoot, thead, tr, th, td,
+            article, aside, canvas, details, embed, 
+            figure, figcaption, footer, header, hgroup, 
+            menu, nav, output, ruby, section, summary,
+            time, mark, audio, video {
+                margin: 0;
+                padding: 0;
+                border: 0;
+                font-size: 100%;
+                font: inherit;
+                vertical-align: baseline;
+            }
+            /* HTML5 display-role reset for older browsers */
+            article, aside, details, figcaption, figure, 
+            footer, header, hgroup, menu, nav, section {
+                display: block;
+            }
+            body {
+                line-height: 1;
+            }
+            ol, ul {
+                list-style: none;
+            }
+            blockquote, q {
+                quotes: none;
+            }
+            blockquote:before, blockquote:after,
+            q:before, q:after {
+                content: '';
+                content: none;
+            }
+            table {
+                border-collapse: collapse;
+                border-spacing: 0;
+            }
+        </style>
     </head>
     <body>
         <span data-text="Painting Board" class="title">Painting Board</span>
@@ -33,5 +183,100 @@
             </div>
         </div>
         <script src="/app.js"></script>
+        <script type="text/javascript">
+            const canvas = document.getElementById("jsCanvas");
+            const ctx = canvas.getContext("2d");
+            const colors = document.getElementsByClassName("jsColor");
+            const range = document.getElementById("jsRange");
+            const mode = document.getElementById("jsMode");
+            const saveBtn = document.getElementById("jsSave");
+            const initial_color = "#2c2c2c";
+            const canvas_size = 700;
+
+            canvas.width = canvas_size;
+            canvas.height = canvas_size;
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas_size, canvas_size);
+            ctx.strokeStyle = initial_color;
+            ctx.fillStyle = initial_color;
+            ctx.lineWidth = 2.5;
+
+            let painting = false;
+            let filling = false;
+
+            function stopPainting() {
+                painting = false;
+            }
+            function startPainting() {
+                painting = true;
+            }
+            function onMouseMove(event) {
+                const x = event.offsetX;
+                const y = event.offsetY;
+                if(!painting) {
+                    // console.log("creation path in", x, y);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                } else {
+                    // console.log("creation line in", x, y);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                }
+            }
+            function handleColorClick(event) {
+                const color = event.target.style.backgroundColor;
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+            }
+            function handleRangeChange(event) {
+                const size = event.target.value;
+                ctx.lineWidth = size;
+            }
+            function handleModeClick(event) {
+                if(filling === true) {
+                    filling = false;
+                    mode.innerText = "Fill"
+                } else {
+                    filling = true;
+                    mode.innerText = "Paint";
+                }
+            }
+            function handleCanvasClick() {
+                if(filling) {
+                    ctx.fillRect(0, 0, canvas_size, canvas_size);
+                }
+            }
+            function handleCM(event) {
+                event.preventDefault();
+            }
+            function handleSaveClick() {
+            const image = canvas.toDataURL();
+            const link = document.createElement("a");
+            link.href = image;
+            link.download = "paintIMG[Export]";
+            link.click();
+            }
+
+            if(canvas) {
+                canvas.addEventListener("mousemove", onMouseMove);
+                canvas.addEventListener("mousedown", startPainting);
+                canvas.addEventListener("mouseup", stopPainting);
+                canvas.addEventListener("mouseleave", stopPainting);
+                canvas.addEventListener("click", handleCanvasClick);
+                canvas.addEventListener("contextmenu", handleCM)
+            }
+
+            Array.from(colors).forEach(color => color.addEventListener("click", handleColorClick));
+
+            if(range) {
+                range.addEventListener("input", handleRangeChange);
+            }
+            if(mode) {
+                mode.addEventListener("click", handleModeClick);
+            }
+            if(saveBtn) {
+                saveBtn.addEventListener("click", handleSaveClick);
+            }
+        </script>
     </body>
 </html>
